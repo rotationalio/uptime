@@ -1,2 +1,3 @@
-# uptime
-Service status monitor for Rotational applications and systems.
+# Uptime
+
+**Service status monitor for Rotational applications and systems.**
