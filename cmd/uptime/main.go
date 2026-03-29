@@ -7,8 +7,8 @@ import (
 	"text/tabwriter"
 
 	"github.com/joho/godotenv"
-	confire "github.com/rotationalio/confire/usage"
 	"github.com/urfave/cli/v3"
+	confire "go.rtnl.ai/confire/usage"
 	"go.rtnl.ai/uptime/pkg"
 	"go.rtnl.ai/uptime/pkg/config"
 	"go.rtnl.ai/uptime/pkg/server"
@@ -51,7 +51,7 @@ func main() {
 
 func serve(ctx context.Context, c *cli.Command) (err error) {
 	var srv *server.Server
-	if srv, err = server.New(nil); err != nil {
+	if srv, err = server.New(); err != nil {
 		return cli.Exit(err, 1)
 	}
 

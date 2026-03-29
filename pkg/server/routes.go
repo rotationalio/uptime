@@ -4,12 +4,21 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.rtnl.ai/gimlet/logger"
 	"go.rtnl.ai/uptime/pkg"
+	"go.rtnl.ai/uptime/pkg/telemetry"
 )
 
 func (s *Server) setupRoutes() (err error) {
+	// Create observability middleware
+	var observability gin.HandlerFunc
+	if observability, err = telemetry.Middleware(); err != nil {
+		return err
+	}
 
 	// Application Middleware
 	middlewares := []gin.HandlerFunc{
+		// o11y should be on the outside so we can record the correct latency of requests
+		// NOTE: o11y panics will not recover due to middleware ordering.
+		observability,
 
 		// Panic recovery middleware
 		gin.Recovery(),

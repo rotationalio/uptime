@@ -19,7 +19,9 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.rtnl.ai/uptime/pkg"
 	"go.rtnl.ai/uptime/pkg/config"
+	"go.rtnl.ai/uptime/pkg/telemetry"
 	"go.rtnl.ai/x/probez"
+	"go.rtnl.ai/x/rlog"
 )
 
 const (
@@ -45,16 +47,18 @@ type Server struct {
 	errc    chan error
 }
 
-func New(conf *config.Config) (s *Server, err error) {
-	if conf == nil {
-		if conf, err = config.New(); err != nil {
-			return nil, fmt.Errorf("could not load configuration: %w", err)
-		}
+func New() (s *Server, err error) {
+	// Initialize telemetry when the server is created.
+	if err = telemetry.Setup(context.Background()); err != nil {
+		return nil, fmt.Errorf("could not initialize telemetry: %w", err)
 	}
 
-	s = &Server{
-		conf: *conf,
-		errc: make(chan error, 1),
+	// Create the server instance.
+	s = &Server{errc: make(chan error, 1)}
+
+	// Load the configuration from the environment if not provided.
+	if s.conf, err = config.Get(); err != nil {
+		return nil, fmt.Errorf("could not load configuration: %w", err)
 	}
 
 	// Configure the gin router
@@ -117,9 +121,9 @@ func (s *Server) Serve() (err error) {
 	// Mark the server as live and ready
 	s.Ready()
 
-	// TODO: setup logging with go.rtnl.ai/x/rlog
-	slog.Default().Info(
-		"server started",
+	rlog.InfoAttrs(
+		context.Background(),
+		"uptime server started",
 		slog.String("url", s.URL()),
 		slog.String("version", pkg.Version(true)),
 		slog.Bool("maintenance", s.conf.Maintenance),
@@ -135,7 +139,7 @@ func (s *Server) serve(sock net.Listener) (err error) {
 }
 
 func (s *Server) Shutdown() (err error) {
-	slog.Default().Info("gracefully shutting down server")
+	rlog.Info("gracefully shutting down server")
 	s.NotReady()
 
 	ctx, cancel := context.WithTimeout(context.Background(), ShutdownTimeout)
@@ -148,7 +152,12 @@ func (s *Server) Shutdown() (err error) {
 		err = errors.Join(serr, fmt.Errorf("could not shutdown server: %w", serr))
 	}
 
-	slog.Default().Debug("server shutdown", slog.Any("error", err))
+	// Shutdown and flush telemetry
+	if err = telemetry.Shutdown(ctx); err != nil {
+		err = errors.Join(err, fmt.Errorf("could not shutdown telemetry: %w", err))
+	}
+
+	rlog.Debug("server shutdown", slog.Any("error", err))
 	return err
 }
 
