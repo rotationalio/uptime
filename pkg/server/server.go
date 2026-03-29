@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.rtnl.ai/uptime/pkg"
 	"go.rtnl.ai/uptime/pkg/config"
+	"go.rtnl.ai/uptime/pkg/telemetry"
 	"go.rtnl.ai/x/probez"
 	"go.rtnl.ai/x/rlog"
 )
@@ -47,6 +48,11 @@ type Server struct {
 }
 
 func New() (s *Server, err error) {
+	// Initialize telemetry when the server is created.
+	if err = telemetry.Setup(context.Background()); err != nil {
+		return nil, fmt.Errorf("could not initialize telemetry: %w", err)
+	}
+
 	// Create the server instance.
 	s = &Server{errc: make(chan error, 1)}
 
@@ -144,6 +150,11 @@ func (s *Server) Shutdown() (err error) {
 	s.srv.SetKeepAlivesEnabled(false)
 	if serr := s.srv.Shutdown(ctx); serr != nil {
 		err = errors.Join(serr, fmt.Errorf("could not shutdown server: %w", serr))
+	}
+
+	// Shutdown and flush telemetry
+	if err = telemetry.Shutdown(ctx); err != nil {
+		err = errors.Join(err, fmt.Errorf("could not shutdown telemetry: %w", err))
 	}
 
 	rlog.Debug("server shutdown", slog.Any("error", err))

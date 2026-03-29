@@ -40,7 +40,13 @@ type TelemetryConfig struct {
 	ServiceAddr string `split_words:"true" env:"GIMLET_OTEL_SERVICE_ADDR" desc:"the primary server name if it is known. E.g. the server name directive in an Nginx config. Should include host identifier and port if it is used; empty if not known."`
 }
 
+// New creates a new Config instance and loads the configuration from the environment,
+// validating the configuration and returning an error if the configuration is invalid
+// or could not be parsed from environment variables.
+//
+// NOTE: New should only be used for testing, for module access to the config use Get().
 func New() (conf *Config, err error) {
+	// NOTE: confire.Process calls Validate() internally.
 	conf = &Config{}
 	if err = confire.Process(Prefix, conf); err != nil {
 		return nil, err
@@ -77,7 +83,10 @@ func Get() (Config, error) {
 	})
 	mu.RLock()
 	defer mu.RUnlock()
-	return *conf, err
+	if conf != nil {
+		return *conf, err
+	}
+	return Config{}, err
 }
 
 func MustGet() Config {
