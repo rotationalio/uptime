@@ -47,4 +47,13 @@ LABEL description="Service status monitor for Rotational applications and system
 # Copy the uptime binary
 COPY --from=builder /go/bin/uptime /usr/local/bin/uptime
 
+# Copy the static assets
+COPY --from=builder /go/src/go.rtnl.ai/uptime/pkg/web/static /var/www/html
+
+ENV UPTIME_STATIC_SERVE=true
+ENV UPTIME_STATIC_ROOT=/var/www/html
+ENV UPTIME_STATIC_URL=/static
+
+EXPOSE 8000
+
 CMD [ "/usr/local/bin/uptime", "serve" ]

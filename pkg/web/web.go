@@ -7,7 +7,6 @@ import (
 	"html/template"
 	"io/fs"
 	"log/slog"
-	"net/http"
 	"path/filepath"
 	"strings"
 	"time"
@@ -18,7 +17,6 @@ import (
 	"golang.org/x/text/language"
 )
 
-//go:embed all:static
 //go:embed all:templates
 var content embed.FS
 
@@ -34,15 +32,6 @@ var (
 	// available to render as a template but with no includes or other template files.
 	partials = []string{"partials/*.html", "partials/*/*.html"}
 )
-
-// Static creates the StaticFS that contains our static assets to be served.
-func Static() http.FileSystem {
-	staticFiles, err := fs.Sub(content, "static")
-	if err != nil {
-		panic(fmt.Errorf("failed to create static file system: %w", err))
-	}
-	return http.FS(staticFiles)
-}
 
 // Templates returns the FileSystem that contains our HTML templates to be rendered.
 func Templates() fs.FS {
