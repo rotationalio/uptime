@@ -5,9 +5,15 @@ import (
 	"go.rtnl.ai/gimlet/logger"
 	"go.rtnl.ai/uptime/pkg"
 	"go.rtnl.ai/uptime/pkg/telemetry"
+	"go.rtnl.ai/uptime/pkg/web"
 )
 
 func (s *Server) setupRoutes() (err error) {
+	// Setup HTML template renderer.
+	if s.router.HTMLRender, err = web.NewRender(web.Templates()); err != nil {
+		return err
+	}
+
 	// Create observability middleware
 	var observability gin.HandlerFunc
 	if observability, err = telemetry.Middleware(); err != nil {
@@ -51,11 +57,21 @@ func (s *Server) setupRoutes() (err error) {
 	s.router.GET("/not-allowed", s.NotAllowed)
 	s.router.GET("/error", s.InternalError)
 
+	// Static Assets
+	s.router.StaticFS("/static", web.Static())
+	// TODO: add routes for favicon.ico, robots.txt, etc. when they are served from the fs
+
 	// Unauthenticated API Routes
 	v1o := s.router.Group("/v1")
 	{
 		// Status/Heartbeat endpoint
 		v1o.GET("/status", s.Status)
+	}
+
+	// Unauthenticated UI Routes
+	uio := s.router.Group("")
+	{
+		uio.GET("/", s.Index)
 	}
 
 	return nil

@@ -25,7 +25,7 @@ func (s *Server) Error(c *gin.Context, err error) {
 
 	c.Negotiate(http.StatusInternalServerError, gin.Negotiate{
 		Offered:  []string{binding.MIMEJSON, binding.MIMEHTML},
-		HTMLName: "errors/status/500.html",
+		HTMLName: "errors/500.html",
 		HTMLData: scene.New(c).Error(err),
 		JSONData: api.Error(err),
 	})
@@ -35,7 +35,7 @@ func (s *Server) Error(c *gin.Context, err error) {
 func (s *Server) NotFound(c *gin.Context) {
 	c.Negotiate(http.StatusNotFound, gin.Negotiate{
 		Offered:  []string{binding.MIMEJSON, binding.MIMEHTML},
-		HTMLName: "errors/status/404.html",
+		HTMLName: "errors/404.html",
 		HTMLData: scene.New(c).Error(ErrNotFound),
 		JSONData: api.NotFound,
 	})
@@ -45,7 +45,7 @@ func (s *Server) NotFound(c *gin.Context) {
 func (s *Server) NotAllowed(c *gin.Context) {
 	c.Negotiate(http.StatusMethodNotAllowed, gin.Negotiate{
 		Offered:  []string{binding.MIMEJSON, binding.MIMEHTML},
-		HTMLName: "errors/status/405.html",
+		HTMLName: "errors/405.html",
 		HTMLData: scene.New(c).Error(ErrNotAllowed),
 		JSONData: api.NotAllowed,
 	})
@@ -55,7 +55,7 @@ func (s *Server) NotAllowed(c *gin.Context) {
 func (s *Server) InternalError(c *gin.Context) {
 	c.Negotiate(http.StatusInternalServerError, gin.Negotiate{
 		Offered:  []string{binding.MIMEJSON, binding.MIMEHTML},
-		HTMLName: "errors/status/500.html",
+		HTMLName: "errors/500.html",
 		HTMLData: scene.New(c).Error(nil),
 		JSONData: api.InternalError,
 	})
