@@ -65,3 +65,8 @@ func (s Scene) WithAPIData(data any) Scene {
 	s[APIData] = data
 	return s
 }
+
+func (s Scene) ForPage(page string) Scene {
+	s[Page] = page
+	return s
+}
