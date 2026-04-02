@@ -5,16 +5,24 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.rtnl.ai/confire/contest"
 	"go.rtnl.ai/uptime/pkg/web"
 )
 
+var env = contest.Env{
+	"UPTIME_STATIC_SERVE": "true",
+	"UPTIME_STATIC_ROOT":  "./static",
+}
+
 func TestRender(t *testing.T) {
+	t.Cleanup(env.Set())
 	renderer, err := web.NewRender(web.Templates())
 	require.NoError(t, err)
 	require.NotNil(t, renderer)
 }
 
 func TestFuncMap(t *testing.T) {
+	t.Cleanup(env.Set())
 	renderer := &web.Render{}
 	funcMap := renderer.FuncMap()
 
