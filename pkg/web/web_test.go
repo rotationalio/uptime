@@ -5,16 +5,67 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.rtnl.ai/confire/contest"
+	"go.rtnl.ai/uptime/pkg/config"
 	"go.rtnl.ai/uptime/pkg/web"
 )
 
+var env = contest.Env{
+	"UPTIME_STATIC_SERVE": "true",
+	"UPTIME_STATIC_ROOT":  "./static",
+}
+
 func TestRender(t *testing.T) {
+	t.Cleanup(env.Set())
+	t.Cleanup(config.Reset)
+
 	renderer, err := web.NewRender(web.Templates())
 	require.NoError(t, err)
 	require.NotNil(t, renderer)
 }
 
+func TestStaticServe(t *testing.T) {
+	staticEnv := contest.Env{
+		"UPTIME_STATIC_SERVE": "true",
+		"UPTIME_STATIC_ROOT":  "./static",
+	}
+	t.Cleanup(staticEnv.Set())
+	t.Cleanup(config.Reset)
+
+	render := &web.Render{}
+	funcMap := render.FuncMap()
+	f := funcMap["static"].(func(string) string)
+	require.Equal(t, "/static/favicon.ico", f("favicon.ico"))
+	require.Equal(t, "/static/robots.txt", f("robots.txt"))
+	require.Equal(t, "/static/css/style.css", f("css/style.css"))
+	require.Equal(t, "/static/js/script.js", f("js/script.js"))
+	require.Equal(t, "/static/images/logo.png", f("images/logo.png"))
+	require.Equal(t, "/static/fonts/font.woff", f("fonts/font.woff"))
+}
+
+func TestStaticCDN(t *testing.T) {
+	cdnEnv := contest.Env{
+		"UPTIME_STATIC_SERVE": "false",
+		"UPTIME_STATIC_URL":   "https://cdn.example.com/",
+	}
+	t.Cleanup(cdnEnv.Set())
+	t.Cleanup(config.Reset)
+
+	render := &web.Render{}
+	funcMap := render.FuncMap()
+	f := funcMap["static"].(func(string) string)
+	require.Equal(t, "https://cdn.example.com/favicon.ico", f("favicon.ico"))
+	require.Equal(t, "https://cdn.example.com/robots.txt", f("robots.txt"))
+	require.Equal(t, "https://cdn.example.com/css/style.css", f("css/style.css"))
+	require.Equal(t, "https://cdn.example.com/js/script.js", f("js/script.js"))
+	require.Equal(t, "https://cdn.example.com/images/logo.png", f("images/logo.png"))
+	require.Equal(t, "https://cdn.example.com/fonts/font.woff", f("fonts/font.woff"))
+}
+
 func TestFuncMap(t *testing.T) {
+	t.Cleanup(env.Set())
+	t.Cleanup(config.Reset)
+
 	renderer := &web.Render{}
 	funcMap := renderer.FuncMap()
 
@@ -81,6 +132,11 @@ func TestFuncMap(t *testing.T) {
 		for _, testCase := range testCases {
 			require.Equal(t, testCase.expected, f(testCase.input))
 		}
+	})
+
+	t.Run("currentYear", func(t *testing.T) {
+		f := funcMap["currentYear"].(func() int)
+		require.Equal(t, time.Now().Year(), f())
 	})
 
 	t.Run("static", func(t *testing.T) {

@@ -1,6 +1,10 @@
 package server
 
 import (
+	"net/http"
+	"os"
+	"path/filepath"
+
 	"github.com/gin-gonic/gin"
 	"go.rtnl.ai/gimlet/logger"
 	"go.rtnl.ai/uptime/pkg"
@@ -58,8 +62,11 @@ func (s *Server) setupRoutes() (err error) {
 	s.router.GET("/error", s.InternalError)
 
 	// Static Assets
-	s.router.StaticFS("/static", web.Static())
-	// TODO: add routes for favicon.ico, robots.txt, etc. when they are served from the fs
+	if s.conf.Static.Serve {
+		s.router.StaticFS(s.conf.Static.URL, http.FS(os.DirFS(s.conf.Static.Root)))
+		s.router.StaticFile("/favicon.ico", filepath.Join(s.conf.Static.Root, "favicon.ico"))
+		s.router.StaticFile("/robots.txt", filepath.Join(s.conf.Static.Root, "robots.txt"))
+	}
 
 	// Unauthenticated API Routes
 	v1o := s.router.Group("/v1")
