@@ -7,11 +7,13 @@ import (
 	"html/template"
 	"io/fs"
 	"log/slog"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin/render"
+	"go.rtnl.ai/uptime/pkg/config"
 	"go.rtnl.ai/x/rlog"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -119,7 +121,7 @@ func (r *Render) AddPattern(fsys fs.FS, pattern string, includes ...string) (err
 func (r *Render) FuncMap() template.FuncMap {
 	if r.funcs == nil {
 		r.funcs = template.FuncMap{
-			"static":      static,
+			"static":      static(),
 			"titlecase":   titlecase,
 			"lowercase":   lowercase,
 			"uppercase":   uppercase,
@@ -150,12 +152,27 @@ func datetime(t time.Time) string {
 	return t.Format("January 2, 2006 3:04 PM")
 }
 
-func static(path string) string {
-	return filepath.Join("/static", path)
-}
-
 func currentYear() int {
 	return time.Now().Year()
+}
+
+func static() func(path string) string {
+	// Load the configuration to get the static URL.
+	conf := config.MustGet()
+
+	if !conf.Static.Serve {
+		// Treat the bae URL as a remote URL and use URL resolution
+		baseURL, _ := url.Parse(conf.Static.URL)
+		return func(path string) string {
+			return baseURL.ResolveReference(&url.URL{Path: path}).String()
+		}
+	}
+
+	// Otherwise treat the URL as a prefix and returna prepended path.
+	baseURL := conf.Static.URL
+	return func(path string) string {
+		return filepath.Join(baseURL, path)
+	}
 }
 
 // ===========================================================================
